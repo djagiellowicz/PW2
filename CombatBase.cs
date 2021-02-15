@@ -8,32 +8,51 @@ public class CombatBase : MonoBehaviour
     public float AttackSpeed;
     public List<CombatBase> NearbyEnemies;
     public string Team;
-    public float LastAttack = Time.deltaTime;
+    public float TimeToAttack;
 
+    public void Awake()
+    {
+        TimeToAttack = AttackSpeed;
+    }
     public void TryAttack()
     {
-        float closestDistance = 99999;
-        CombatBase nearestEnemy = null;
-        bool isEnemyDestroyed = false;
 
-        if (NearbyEnemies.Count >= 1)
+        if (TimeToAttack == 0)
         {
 
-            foreach (var enemy in NearbyEnemies)
+
+            float closestDistance = 99999;
+            CombatBase nearestEnemy = null;
+            bool isEnemyDestroyed = false;
+
+            if (NearbyEnemies.Count >= 1)
             {
-                var currentDistance = Vector3.Distance(enemy.transform.position, this.transform.position);
-
-                if (currentDistance <= closestDistance)
+                Debug.Log("Attacking " + this.name);
+                foreach (var enemy in NearbyEnemies)
                 {
-                    closestDistance = currentDistance;
-                    nearestEnemy = enemy;
+                    var currentDistance = Vector3.Distance(enemy.transform.position, this.transform.position);
+
+                    if (currentDistance <= closestDistance)
+                    {
+                        closestDistance = currentDistance;
+                        nearestEnemy = enemy;
+                    }
                 }
+
+                isEnemyDestroyed = nearestEnemy.TakeDamage(Damage);
+                TimeToAttack = AttackSpeed;
+
+                if (isEnemyDestroyed) NearbyEnemies.Remove(nearestEnemy);
             }
-
-            isEnemyDestroyed = nearestEnemy.TakeDamage(Damage);
-
-            if (isEnemyDestroyed) NearbyEnemies.Remove(nearestEnemy);
         }
+    }
+
+    private void Update()
+    {
+        TimeToAttack -= Time.deltaTime;
+        if (TimeToAttack <= 0) TimeToAttack = 0;
+
+        TryAttack();
     }
 
     public bool TakeDamage(float damage)
@@ -41,13 +60,13 @@ public class CombatBase : MonoBehaviour
         Health -= damage;
         if (Health <= 0)
         {
-            Destroy(this);
+            Destroy(this.gameObject);
             return true;
         }
         return false;
     }
 
-    public void OnCollisionEnter(Collision col)
+    public void OnTriggerEnter(Collider col)
     {
         var colCombatBase = col.gameObject.GetComponent<CombatBase>();
 
@@ -64,7 +83,7 @@ public class CombatBase : MonoBehaviour
 
     }
 
-    public void OnCollisionExit(Collision col)
+    public void OnTriggerExit(Collider col)
     {
         var colCombatBase = col.gameObject.GetComponent<CombatBase>();
 
